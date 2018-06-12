@@ -1,0 +1,3 @@
+common/*.js
+browser-client/*.js
+browser-client/public/*.js

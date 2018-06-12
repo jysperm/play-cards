@@ -1,0 +1,9 @@
+digraph G {
+  Browser -> Server [label="HTTP"];
+  Browser -> Play [label="WebSocket"];
+  Server -> Play [label="WebSocket"];
+
+  Browser [label="Browser Client"];
+  Server [label="Play Server Container"];
+  Play [label="RTM Server"];
+}
