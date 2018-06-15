@@ -5,8 +5,6 @@ export enum Suit {
   Diamond = 'Diamond'
 }
 
-export const suits: Suit[] = [Suit.Spade, Suit.Club, Suit.Heart, Suit.Diamond]
-
 export interface Card {
   suit: Suit
   rank: number
@@ -34,4 +32,17 @@ export interface GameState {
   currentPlayer?: Player
 
   winer?: Player
+}
+
+export type GameAction = PlayCardsAction | PassAction
+
+export interface PlayCardsAction {
+  action: 'playCards'
+  player: Player
+  cards: Card[]
+}
+
+export interface PassAction {
+  action: 'pass'
+  player: Player
 }

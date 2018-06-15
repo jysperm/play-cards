@@ -3,8 +3,9 @@ import * as _ from 'lodash'
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 
-import Game from '../common/game'
+import {actionSyncController, statusSyncContorller} from './game-sync'
 import {Card, Player, GameState, Suit} from '../common/types'
+import Game from '../common/game'
 
 const realtime = new Realtime({
   appId: 'AaU1irN3dpcBUb9VINnB0yot-gzGzoHsz',
@@ -38,9 +39,11 @@ class GameComponent extends React.Component<Object, GameComponentState> {
           cardsCount={this.state.playersCardsCount[peerPlayers[1]]} />
       </div>
       <PreviousCardsComponent playerName={this.state.previousCardsPlayer} cards={this.state.previousCards} />
-      <MyCardsComponent cards={this.state.myCards} game={this.game} playerName={this.state.playerName}
-        ableToPlay={this.state.currentPlayer === this.state.playerName}
-        ableToPass={this.state.currentPlayer === this.state.playerName && !_.isEmpty(this.state.previousCards) } />
+      <MyCardsComponent cards={this.state.myCards} ableToPlay={this.state.currentPlayer === this.state.playerName}
+        ableToPass={this.state.currentPlayer === this.state.playerName && !_.isEmpty(this.state.previousCards) }
+        ableToBeatCards={this.game ? this.game.ableToBeatCards : _.constant(false)}
+        playCards={this.playCards.bind(this)} pass={this.pass.bind(this)}
+        />
     </div>
   }
 
@@ -52,41 +55,40 @@ class GameComponent extends React.Component<Object, GameComponentState> {
     this.setState({playerName})
 
     realtime.createIMClient(playerName).then( imClient => {
-      fetch(`/join?playerName=${playerName}`, {method: 'post'})
-
-      imClient.on(Event.MESSAGE, (message, conversation) => {
-        const payload = JSON.parse(message.text)
-
-        console.log(payload.action, message.text)
-
-        switch (payload.action) {
-          case 'gameStarted':
-            this.game = new Game(payload.seed, payload.players)
-
-            this.game.on('stateChanged', () => {
-              this.setState(this.game.getState(playerName))
-            })
-
-            this.game.on('action', payload => {
-              conversation.send(new TextMessage(JSON.stringify(payload)))
-            })
-
-            this.game.on('error', err => {
-              console.error(err)
-            })
-
-            this.game.dealCards()
-            break
-          case 'play':
-            this.game.playCards(payload.player, payload.cards)
-            break
-          case 'pass':
-            this.game.pass(payload.player)
-            break
-          default:
-            console.error(`Unknown action ${payload.action}`)
+      return fetch(`/join?playerName=${playerName}`, {method: 'post'}).then( res => {
+        if (!res.ok) {
+          return res.text().then( body => {
+            throw new Error(body)
+          })
         }
+
+        return actionSyncController(imClient).then( game => {
+          this.game = game
+
+          game.on('stateChanged', () => {
+            this.setState(game.getState(this.state.playerName))
+          })
+
+          this.setState(game.getState(this.state.playerName))
+        })
       })
+    }).catch( err => {
+      console.error(err)
+    })
+  }
+
+  public playCards(cards: Card[]) {
+    this.game.performAction({
+      action: 'playCards',
+      player: this.state.playerName,
+      cards: cards
+    })
+  }
+
+  public pass() {
+    this.game.performAction({
+      action: 'pass',
+      player: this.state.playerName
     })
   }
 }
@@ -123,11 +125,13 @@ class PreviousCardsComponent extends React.Component<PreviousCardsProps, Object>
 }
 
 interface MyCardsProps {
-  playerName: Player
-  game: Game
   cards: Card[]
   ableToPlay: boolean
   ableToPass: boolean
+
+  ableToBeatCards(cards: Card[])
+  playCards(cards: Card[])
+  pass()
 }
 
 interface MyCardState {
@@ -140,7 +144,7 @@ class MyCardsComponent extends React.Component<MyCardsProps, MyCardState> {
   }
 
   public render() {
-    const ableToBeat = this.props.game && this.props.game.ableToBeatCards(this.state.selectedCards)
+    const ableToBeat = this.props.ableToBeatCards(this.state.selectedCards)
 
     return <div className='my-cards'>
       <div>
@@ -166,7 +170,7 @@ class MyCardsComponent extends React.Component<MyCardsProps, MyCardState> {
   }
 
   protected onPlay() {
-    this.props.game.playCards(this.props.playerName, this.state.selectedCards)
+    this.props.playCards(this.state.selectedCards)
 
     this.setState({
       selectedCards: []
@@ -174,7 +178,7 @@ class MyCardsComponent extends React.Component<MyCardsProps, MyCardState> {
   }
 
   protected onPass() {
-    this.props.game.pass(this.props.playerName)
+    this.props.pass()
 
     this.setState({
       selectedCards: []

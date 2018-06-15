@@ -1,8 +1,10 @@
-import * as seedrandom from 'seedrandom'
 import * as _ from 'lodash'
 import * as EventEmitter from 'eventemitter3'
+import * as seedrandom from 'seedrandom'
 
-import {Suit, suits, Card, PlayersCards, Player, GameState} from '../common/types'
+import {Suit, Card, PlayersCards, Player, GameState, GameAction} from '../common/types'
+
+const suits: Suit[] = [Suit.Spade, Suit.Club, Suit.Heart, Suit.Diamond]
 
 export default class Game extends EventEmitter {
   private random: () => number
@@ -58,7 +60,7 @@ export default class Game extends EventEmitter {
     while(true) {
       for (let i in players) {
         if (cards.length === 0) {
-          this.stateChanged()
+          this.emit('stateChanged')
           return
         }
 
@@ -74,7 +76,21 @@ export default class Game extends EventEmitter {
     return ableToBeatCards(this.previousCards, cards)
   }
 
-  public playCards(player: Player, cards: Card[]) {
+  public performAction(payload: GameAction) {
+    this.applyAction(payload)
+    this.emit('action', payload)
+  }
+
+  public applyAction(payload: GameAction) {
+    switch (payload.action) {
+      case 'playCards':
+        return this.playCards(payload.player, payload.cards)
+      case 'pass':
+        return this.pass(payload.player)
+    }
+  }
+
+  private playCards(player: Player, cards: Card[]) {
     if (this.currentPlayer !== player) {
       this.emit('error', new Error(`playCards: currentPlayer is not ${player}`))
       return
@@ -105,15 +121,9 @@ export default class Game extends EventEmitter {
     }
 
     this.nextPlayer()
-
-    this.emit('action', {
-      action: 'play',
-      player: player,
-      cards: cards
-    })
   }
 
-  public pass(player: Player) {
+  private pass(player: Player) {
     if (this.currentPlayer !== player) {
       this.emit('error', new Error(`pass: currentPlayer is not ${player}`))
       return
@@ -125,11 +135,6 @@ export default class Game extends EventEmitter {
     }
 
     this.nextPlayer()
-
-    this.emit('action', {
-      action: 'pass',
-      player: player
-    })
   }
 
   private nextPlayer() {
@@ -145,10 +150,6 @@ export default class Game extends EventEmitter {
       this.previousCards = []
     }
 
-    this.stateChanged()
-  }
-
-  private stateChanged() {
     this.emit('stateChanged')
   }
 }
