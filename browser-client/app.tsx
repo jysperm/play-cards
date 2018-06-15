@@ -3,7 +3,7 @@ import * as _ from 'lodash'
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 
-import {actionSyncController, statusSyncContorller} from './game-sync'
+import {actionSyncController, statusSyncContorller} from './client-sync'
 import {Card, Player, GameState, Suit} from '../common/types'
 import Game from '../common/game'
 
