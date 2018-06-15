@@ -5,8 +5,8 @@ import * as Promise from 'bluebird'
 import {Realtime, TextMessage, Event, ConversationBase} from 'leancloud-realtime'
 
 const realtime = new Realtime({
-  appId: 'oQlUIlfKQ23vzV8IEqyyqhfn-gzGzoHsz',
-  appKey: 'VwM5MADbb8LOymj1lpmmqn45',
+  appId: process.env.LEANCLOUD_APP_ID,
+  appKey: process.env.LEANCLOUD_APP_KEY
 })
 
 import {Player} from '../common/types'
@@ -36,7 +36,7 @@ app.post('/join', (req, res) => {
     })))
   } else {
     console.log(`${req.query.playerName} is waiting`)
-    waiting.push(req.query.playerName)
+    waiting = _.uniq(waiting.concat(req.query.playerName))
   }
 
   if (waiting.length >= 3) {

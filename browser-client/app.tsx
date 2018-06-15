@@ -7,8 +7,8 @@ import Game from '../common/game'
 import {Card, Player, GameState, Suit} from '../common/types'
 
 const realtime = new Realtime({
-  appId: 'oQlUIlfKQ23vzV8IEqyyqhfn-gzGzoHsz',
-  appKey: 'VwM5MADbb8LOymj1lpmmqn45',
+  appId: 'AaU1irN3dpcBUb9VINnB0yot-gzGzoHsz',
+  appKey: '6R0akkHpnHe7kOr3Kz6PJTcO',
 })
 
 interface GameComponentState extends GameState {
@@ -56,6 +56,8 @@ class GameComponent extends React.Component<Object, GameComponentState> {
 
       imClient.on(Event.MESSAGE, (message, conversation) => {
         const payload = JSON.parse(message.text)
+
+        console.log(payload.action, message.text)
 
         switch (payload.action) {
           case 'gameStarted':
