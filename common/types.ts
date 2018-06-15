@@ -46,3 +46,10 @@ export interface PassAction {
   action: 'pass'
   player: Player
 }
+
+export interface RoomState {
+  roomId: string
+  players: Player[]
+  seed: string
+  reconnected?(player: Player)
+}
