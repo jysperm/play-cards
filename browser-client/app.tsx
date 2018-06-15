@@ -29,6 +29,8 @@ class GameComponent extends React.Component<Object, GameComponentState> {
     const peerPlayers = _.without(this.state.players, this.state.playerName)
 
     return <div className='game-component'>
+      {this.state.currentPlayer ? undefined : <div className='overlay'>等待游戏开始</div>}
+      {this.state.winer && <div className='overlay'>玩家 {this.state.winer} 获胜</div>}
       <div className='peer-players'>
         <PeerPlayerComponent playerName={peerPlayers[0]} currentPlayer={this.state.currentPlayer}
           cardsCount={this.state.playersCardsCount[peerPlayers[0]]} />

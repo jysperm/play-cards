@@ -100,6 +100,10 @@ export default class Game extends EventEmitter {
     this.previousCards = cards
     this.previousCardsPlayer = player
 
+    if (_.isEmpty(latestPlayerCards)) {
+      this.winer = player
+    }
+
     this.nextPlayer()
 
     this.emit('action', {
