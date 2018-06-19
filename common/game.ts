@@ -2,15 +2,17 @@ import * as _ from 'lodash'
 import * as EventEmitter from 'eventemitter3'
 import * as seedrandom from 'seedrandom'
 
-import {Suit, Card, PlayersCards, Player, GameState, GameAction} from '../common/types'
+import {Suit, Card, PlayersCards, Player, GameState, GameAction, PlayersCardsCount} from '../common/types'
 
 const suits: Suit[] = [Suit.Spade, Suit.Club, Suit.Heart, Suit.Diamond]
 
+// events: action, stateChanged, error
 export default class Game extends EventEmitter {
   private random: () => number
 
   private players: Player[]
   private playersCards: PlayersCards
+  private playersCardsCount?: PlayersCardsCount
 
   private previousCards: Card[]
   private previousCardsPlayer?: Player
@@ -18,7 +20,7 @@ export default class Game extends EventEmitter {
 
   private winer?: Player
 
-  constructor(seed: number, players: Player[]) {
+  constructor(seed: string, players: Player[]) {
     super()
 
     this.random = seedrandom(seed.toString())
@@ -35,7 +37,7 @@ export default class Game extends EventEmitter {
   public getState(player: Player): GameState {
     return {
       players: this.players,
-      playersCardsCount: _.mapValues(this.playersCards, cards => cards.length),
+      playersCardsCount: this.playersCardsCount || _.mapValues(this.playersCards, cards => cards.length),
 
       myCards: this.playersCards[player],
 
@@ -45,6 +47,18 @@ export default class Game extends EventEmitter {
 
       winer: this.winer
     }
+  }
+
+  public setState(player: Player, state: GameState) {
+    this.players = state.players
+    this.playersCardsCount = state.playersCardsCount
+    this.playersCards[player] = state.myCards
+    this.previousCards = state.previousCards
+    this.previousCardsPlayer = state.previousCardsPlayer
+    this.currentPlayer = state.currentPlayer
+    this.winer = state.winer
+
+    this.emit('stateChanged')
   }
 
   public dealCards() {
@@ -175,13 +189,15 @@ function ableToBeatCards(previousCards: Card[], playingCards: Card[]): boolean {
     return _.some([
       isSoloOrPairCards(playingCards),
       isTrioCards(playingCards),
-      isChainCards(playingCards)
+      isChainCards(playingCards),
+      isBomb(playingCards)
     ])
   } else {
     return _.some([
       ableToPlaySoloOrPairCards(previousCards, playingCards),
       ableToPlayTrioCards(previousCards, playingCards),
-      ableToPlayChainCards(previousCards, playingCards)
+      ableToPlayChainCards(previousCards, playingCards),
+      ableToPlayBomb(previousCards, playingCards)
     ])
   }
 }
@@ -210,7 +226,7 @@ function isSoloOrPairCards(playingCards: Card[]): boolean {
 }
 
 function ableToPlaySoloOrPairCards(previousCards: Card[], playingCards: Card[]): boolean {
-  if (isSoloOrPairCards(playingCards)) {
+  if (isSoloOrPairCards(previousCards) && isSoloOrPairCards(playingCards)) {
     if (_.includes([1, 2], previousCards.length) && previousCards.length === playingCards.length) {
       return adjustedCardRank(playingCards[0]) > adjustedCardRank(previousCards[0])
     }
@@ -237,7 +253,7 @@ function ableToPlayTrioCards(previousCards: Card[], playingCards: Card[]): boole
   const previousTrioCards = _.find(_.groupBy(previousCards, 'rank'), {length: 3})
   const playingTrioCards = _.find(_.groupBy(playingCards, 'rank'), {length: 3})
 
-  if (isTrioCards(playingCards)) {
+  if (isTrioCards(previousCards) && isTrioCards(playingCards)) {
     if (previousCards.length === playingCards.length) {
       return adjustedCardRank(playingTrioCards[0]) > adjustedCardRank(previousTrioCards[0])
     }
@@ -247,11 +263,11 @@ function ableToPlayTrioCards(previousCards: Card[], playingCards: Card[]): boole
 }
 
 function isChainCards(playingCards: Card[]): boolean {
-  const groups = _.groupBy(playingCards, 'rank')
+  const groups = _.groupBy(playingCards, adjustedCardRank)
 
   if (_.keys(_.groupBy(groups, 'length')).length === 1) {
-    const ranks = _.keys(groups).map( rank => parseInt(rank)).sort()
-    return _.isEqual(ranks, _.range(ranks[0], ranks[ranks.length - 1] + 1))
+    const ranks = _.sortBy(_.keys(groups).map( rank => parseInt(rank)))
+    return _.isEqual(ranks, _.range(ranks[0], ranks[ranks.length - 1] + 1)) && _.keys(groups).length >= 3
   }
 
   return false
@@ -261,7 +277,7 @@ function ableToPlayChainCards(previousCards: Card[], playingCards: Card[]): bool
   const previousRanks = _.keys(_.groupBy(previousCards, 'rank')).map( rank => parseInt(rank)).sort()
   const playingRanks = _.keys(_.groupBy(playingCards, 'rank')).map( rank => parseInt(rank)).sort()
 
-  if (isChainCards(playingCards)) {
+  if (isChainCards(previousCards) && isChainCards(playingCards)) {
     if (previousRanks.length === 0 || previousRanks.length === playingRanks.length) {
       return adjustedRank(playingRanks[0]) > adjustedRank(previousRanks[0])
     }
@@ -270,13 +286,22 @@ function ableToPlayChainCards(previousCards: Card[], playingCards: Card[]): bool
   return false
 }
 
+function isBomb(playingCards: Card[]): boolean {
+  const groups = _.groupBy(playingCards, 'rank')
+  return playingCards.length === 4 && _.keys(groups).length === 1
+}
+
+function ableToPlayBomb(previousCards: Card[], playingCards: Card[]): boolean {
+  return isBomb(playingCards) && (!isBomb(previousCards) || adjustedCardRank(playingCards[0]) >= adjustedCardRank(previousCards[0]))
+}
+
 function adjustedCardRank(card: Card): number {
   return adjustedRank(card.rank)
 }
 
 function adjustedRank(rank: number): number {
   if (rank <= 2) {
-    return rank + 15
+    return rank + 13
   } else {
     return rank
   }

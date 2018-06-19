@@ -5,8 +5,8 @@
 .peer-player {
   display: inline-block;
   border: 1px solid #ddd;
-  margin: 1em 2em;
-  padding: 1em;
+  margin: .5em;
+  padding: .5em;
 
   font-size: 32px;
 }
@@ -14,8 +14,8 @@
 .previous-cards {
   clear: both;
   border: 1px solid #ddd;
-  min-height: 15em;
-  margin: 2em auto;
+  min-height: 12em;
+  margin: 1em auto;
 }
 
 .my-cards button, .my-cards .message {
@@ -30,6 +30,7 @@
 .card {
   float: left;
   border: 1px solid #ddd;
+  cursor: pointer;
 
   padding: 2em 1em;
   margin: .2em;

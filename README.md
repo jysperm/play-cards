@@ -1,1 +1,5 @@
-https://zh.wikipedia.org/wiki/%E9%AC%A5%E5%9C%B0%E4%B8%BB
+## 规则
+实现了 [斗地主](https://zh.wikipedia.org/wiki/%E9%AC%A5%E5%9C%B0%E4%B8%BB) 的一个子集：
+
+- 支持：单子、对子、三不带、三带一、三带二、炸弹、单顺、双顺
+- 不支持：大小王、叫地主、抢地主、四带一、四带二、飞机

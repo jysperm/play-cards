@@ -36,7 +36,7 @@ app.post('/join', (req, res) => {
     const roomState: RoomState = {
       roomId: _.uniqueId(),
       players: players,
-      seed: Math.random().toString(),
+      seed: Math.random().toString()
     }
 
     rooms.push(roomState)

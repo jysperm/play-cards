@@ -4,7 +4,7 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 
 import {actionSyncController, statusSyncContorller} from './client-sync'
-import {Card, Player, GameState, Suit} from '../common/types'
+import {Card, Player, GameState} from '../common/types'
 import Game from '../common/game'
 
 const realtime = new Realtime({
@@ -41,7 +41,7 @@ class GameComponent extends React.Component<Object, GameComponentState> {
       <PreviousCardsComponent playerName={this.state.previousCardsPlayer} cards={this.state.previousCards} />
       <MyCardsComponent cards={this.state.myCards} ableToPlay={this.state.currentPlayer === this.state.playerName}
         ableToPass={this.state.currentPlayer === this.state.playerName && !_.isEmpty(this.state.previousCards) }
-        ableToBeatCards={this.game ? this.game.ableToBeatCards : _.constant(false)}
+        ableToBeatCards={this.game ? this.game.ableToBeatCards.bind(this.game) : _.constant(false)}
         playCards={this.playCards.bind(this)} pass={this.pass.bind(this)}
         />
     </div>
@@ -66,10 +66,10 @@ class GameComponent extends React.Component<Object, GameComponentState> {
           this.game = game
 
           game.on('stateChanged', () => {
-            this.setState(game.getState(this.state.playerName))
+            this.setState(game.getState(playerName))
           })
 
-          this.setState(game.getState(this.state.playerName))
+          this.setState(game.getState(playerName))
         })
       })
     }).catch( err => {
@@ -150,7 +150,7 @@ class MyCardsComponent extends React.Component<MyCardsProps, MyCardState> {
       <div>
         <button type='button' disabled={!this.props.ableToPlay || !ableToBeat} onClick={this.onPlay.bind(this)}>出牌</button>
         <button type='button' disabled={!this.props.ableToPass} onClick={this.onPass.bind(this)}>放弃</button>
-        <span className='message'>{!_.isEmpty(this.state.selectedCards) && !ableToBeat ? '无法管上前一玩家出牌' : ''}</span>
+        <span className='message'>{!_.isEmpty(this.state.selectedCards) && !ableToBeat ? '无法出牌 / 管不上' : ''}</span>
       </div>
       <h2>我的手牌 {this.props.ableToPlay ? '⏰（正在出牌）' : ''}</h2>
       <CardsComponent cards={this.props.cards} selectedCards={this.state.selectedCards} onCardClick={this.onCardClicked.bind(this)} />
