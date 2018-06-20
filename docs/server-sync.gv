@@ -1,0 +1,11 @@
+digraph Sync {
+  Game -> Controller [label="event: stateChanged"]
+  Controller -> Clients [label="conv.send()"]
+
+  Controller -> Game [label="performAction"]
+  Clients -> Controller [label="conv.on('mssage')"]
+
+  Game [shape=box]
+  Clients [shape=box]
+  Controller [shape=box, label="statusSyncController"]
+}

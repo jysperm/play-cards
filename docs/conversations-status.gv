@@ -1,0 +1,14 @@
+digraph ConversationsStatus {
+  Master -> ConversationA;
+  Master -> ConversationB;
+  Master -> ConversationC;
+
+  ConversationA -> Player1;
+  ConversationB -> Player2;
+  ConversationC -> Player3;
+
+  ConversationA [shape=box]
+  ConversationB [shape=box]
+  ConversationC [shape=box]
+  Master [label="MasterClient"];
+}

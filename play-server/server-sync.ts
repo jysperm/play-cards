@@ -67,7 +67,8 @@ export function statusSyncContorller(roomState: RoomState) {
         })
       }
 
-      masterClient.on(Event.MESSAGE, (message, conversation: ConversationBase) => {
+      // FIXME: tsd of leancloud.realtime
+      masterClient.on(Event.MESSAGE.toString(), (message, conversation: ConversationBase) => {
         const payload = JSON.parse(message.text)
         const player = _.first(_.without(conversation.members, masterClientId))
         game.performAction(_.extend(payload, {player}))

@@ -1,4 +1,4 @@
-digraph G {
+digraph Connections {
   Browser -> Server [label="HTTP"];
   Browser -> Play [label="WebSocket"];
   Server -> Play [label="WebSocket"];

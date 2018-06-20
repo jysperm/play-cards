@@ -1,0 +1,9 @@
+digraph ConversationsAction {
+  Master -> Conversation;
+  Player1 -> Conversation;
+  Player2 -> Conversation;
+  Player3 -> Conversation;
+
+  Conversation [shape=box]
+  Master [label="MasterClient"];
+}

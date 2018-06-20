@@ -6,7 +6,8 @@ export function actionSyncController(imClient: IMClient): Promise<Game> {
   let game
 
   return new Promise( (resolve, reject) => {
-    imClient.on(Event.MESSAGE, (message, conversation: ConversationBase) => {
+    // FIXME: tsd of leancloud.realtime
+    imClient.on(Event.MESSAGE.toString(), (message, conversation: ConversationBase) => {
       try {
         console.log('[Received]', message.from, message.text)
 
@@ -49,7 +50,8 @@ export function statusSyncContorller(imClient: IMClient): Promise<Game> {
   let game
 
   return new Promise( (resolve, reject) => {
-    imClient.on(Event.MESSAGE, (message, conversation: ConversationBase) => {
+    // FIXME: tsd of leancloud.realtime
+    imClient.on(Event.MESSAGE.toString(), (message, conversation: ConversationBase) => {
       try {
         console.log('[Received]', message.from, message.text)
 
