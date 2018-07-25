@@ -3,6 +3,7 @@
     "node": "8.x"
   },
   "dependencies": {
+    "@leancloud/play": "^0.10.2",
     "bluebird": "^3.5.1",
     "eventemitter3": "^3.1.0",
     "express": "^4.16.3",

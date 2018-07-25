@@ -1,26 +1,43 @@
+import {play, Event, Region, ReceiverGroup} from '@leancloud/play'
 import Game from '../common/game'
-import {GameState} from '../common/types'
-import {Event, IMClient, TextMessage, ConversationBase} from 'leancloud-realtime'
 
-export function actionSyncController(imClient: IMClient): Promise<Game> {
-  let game
+play.init({
+  appId: 'AaU1irN3dpcBUb9VINnB0yot-gzGzoHsz',
+  appKey: '6R0akkHpnHe7kOr3Kz6PJTcO',
+  region: Region.NorthChina
+})
 
+export function actionSyncController(roomName: string, playerName: string): Promise<Game> {
   return new Promise( (resolve, reject) => {
-    // FIXME: tsd of leancloud.realtime
-    imClient.on(Event.MESSAGE.toString(), (message, conversation: ConversationBase) => {
+    let game
+
+    play.on(Event.CONNECT_FAILED, err => {
+      console.error(err)
+    })
+
+    play.once(Event.LOBBY_JOINED, () => {
+      play.joinRoom(roomName)
+    })
+
+    play.on(Event.ROOM_JOIN_FAILED, err => {
+      console.error(err)
+    })
+
+    play.on(Event.CUSTOM_EVENT, ({eventId, eventData, senderId}) => {
       try {
-        console.log('[Received]', message.from, message.text)
+        console.log('[Received]', senderId, eventId, eventData)
 
-        const payload = JSON.parse(message.text)
-
-        switch (payload.action) {
+        switch (eventId) {
           case 'gameStarted':
             if (!game) {
-              game = new Game(payload.seed, payload.players)
+              game = new Game(eventData.seed, eventData.players)
 
               game.on('action', payload => {
                 console.log('[Send]', JSON.stringify(payload))
-                conversation.send(new TextMessage(JSON.stringify(payload)))
+
+                play.sendEvent(payload.action, payload, {
+                  receiverGroup: ReceiverGroup.Others
+                })
               })
 
               game.on('error', err => {
@@ -36,35 +53,51 @@ export function actionSyncController(imClient: IMClient): Promise<Game> {
             if (!game) {
               console.error('Game have not started')
             } else {
-              game.applyAction(payload)
+              eventData.action = eventId
+              game.applyAction(eventData)
             }
         }
       } catch (err) {
         console.error(err)
       }
     })
+
+    play.userId = playerName
+    play.connect()
   })
 }
 
-export function statusSyncContorller(imClient: IMClient): Promise<Game> {
-  let game
-
+export function statusSyncContorller(roomName: string, playerName: string): Promise<Game> {
   return new Promise( (resolve, reject) => {
-    // FIXME: tsd of leancloud.realtime
-    imClient.on(Event.MESSAGE.toString(), (message, conversation: ConversationBase) => {
+    let game
+
+    play.on(Event.CONNECT_FAILED, err => {
+      console.error(err)
+    })
+
+    play.once(Event.LOBBY_JOINED, () => {
+      play.joinRoom(roomName)
+    })
+
+    play.on(Event.ROOM_JOIN_FAILED, err => {
+      console.error(err)
+    })
+
+    play.on(Event.CUSTOM_EVENT, ({eventId, eventData, senderId}) => {
       try {
-        console.log('[Received]', message.from, message.text)
+        console.log('[Received]', senderId, eventId, eventData)
 
-        const payload = JSON.parse(message.text)
-
-        switch (payload.action) {
+        switch (eventId) {
           case 'gameStarted':
             if (!game) {
-              game = new Game('', payload.players)
+              game = new Game('', eventData.players)
 
               game.on('action', payload => {
                 console.log('[Send]', JSON.stringify(payload))
-                conversation.send(new TextMessage(JSON.stringify(payload)))
+
+                play.sendEvent(payload.action, payload, {
+                  receiverGroup: ReceiverGroup.MasterClient
+                })
               })
 
               game.on('error', err => {
@@ -78,12 +111,15 @@ export function statusSyncContorller(imClient: IMClient): Promise<Game> {
             if (!game) {
               console.error('Game have not started')
             } else {
-              game.setState(payload.player, payload.state)
+              game.setState(eventData.player, eventData.state)
             }
         }
       } catch (err) {
         console.error(err)
       }
     })
+
+    play.userId = playerName
+    play.connect()
   })
 }

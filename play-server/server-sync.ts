@@ -1,94 +1,123 @@
-import {Realtime, TextMessage, Event, ConversationBase} from 'leancloud-realtime'
+import {Play, Event, Region} from '@leancloud/play'
 import * as _ from 'lodash'
 import * as Promise from 'bluebird'
 
 import Game from '../common/game'
-import {RoomState, Player} from '../common/types'
+import {RoomState} from '../common/types'
 
-const realtime = new Realtime({
-  appId: process.env.LEANCLOUD_APP_ID,
-  appKey: process.env.LEANCLOUD_APP_KEY
-})
+export function actionSyncController(roomState: RoomState): Promise<Play> {
+  return new Promise( (resolve, reject) => {
+    const play = initPlay(`master-${roomState.roomId}`)
 
-export function actionSyncController(roomState: RoomState) {
-  return realtime.createIMClient(`masterClient-${roomState.roomId}`).then( masterClient => {
-    return masterClient.createConversation({
-      name: `Game room ${roomState.roomId}`,
-      members: roomState.players
-    }).then( conversation => {
-      roomState.reconnected = (playerName) => {
-        conversation.send(new TextMessage(JSON.stringify({
-          action: 'gameStarted',
-          players: roomState.players,
-          seed: roomState.seed
-        })))
-      }
+    play.on(Event.CONNECT_FAILED, err => {
+      console.error(err)
+    })
 
-      conversation.send(new TextMessage(JSON.stringify({
-        action: 'gameStarted',
+    play.once(Event.LOBBY_JOINED, () => {
+      play.createRoom({
+        expectedUserIds: roomState.players
+      })
+    })
+
+    play.once(Event.ROOM_JOIN_FAILED, err => {
+      reject(err)
+    });
+
+    play.once(Event.ROOM_JOINED, () => {
+      resolve(play)
+    });
+
+    play.on(Event.PLAYER_ROOM_JOINED, player => {
+      play.sendEvent('gameStarted', {
         players: roomState.players,
         seed: roomState.seed
-      })))
+      }, {
+        targetActorIds: [player.actorId]
+      })
     })
+
+    play.connect()
   })
 }
 
-export function statusSyncContorller(roomState: RoomState) {
-  const masterClientId = `masterClient-${roomState.roomId}`
-
-  return realtime.createIMClient(masterClientId).then( masterClient => {
+export function statusSyncContorller(roomState: RoomState): Promise<Play> {
+  return new Promise( (resolve, reject) => {
+    const play = initPlay(`master-${roomState.roomId}`)
     const game = new Game(roomState.seed, roomState.players)
 
-    return Promise.map(roomState.players, (player: Player) => {
-      return masterClient.createConversation({
-        name: `masterClient for Room ${roomState.roomId}`,
-        members: [player]
-      }).then( conversation => {
-        return conversation.send(new TextMessage(JSON.stringify({
-          action: 'gameStarted',
-          players: roomState.players
-        }))).then( () => {
-          return conversation
-        })
-      })
-    }).then( conversations => {
-      const conversationsByPlayer = _.zipObject(roomState.players, conversations)
+    play.on(Event.CONNECT_FAILED, err => {
+      console.error(err)
+    })
 
-      roomState.reconnected = (playerName) => {
-        conversationsByPlayer[playerName].send(new TextMessage(JSON.stringify({
-          action: 'gameStarted',
-          players: roomState.players
-        }))).then( () => {
-          return conversationsByPlayer[playerName].send(new TextMessage(JSON.stringify({
-            action: 'stateChanged',
+    play.once(Event.LOBBY_JOINED, () => {
+      play.createRoom({
+        expectedUserIds: roomState.players
+      })
+    })
+
+    play.on(Event.ROOM_JOIN_FAILED, err => {
+      reject(err)
+    });
+
+    play.on(Event.ROOM_JOINED, () => {
+      game.dealCards()
+      resolve(play)
+    });
+
+    play.on(Event.PLAYER_ROOM_JOINED, player => {
+      play.sendEvent('gameStarted', {
+        players: roomState.players
+      }, {
+        targetActorIds: [player.actorId]
+      })
+
+      play.sendEvent('stateChanged', {
+        player: player.userId,
+        state: game.getState(player.userId)
+      }, {
+        targetActorIds: [player.actorId]
+      })
+    })
+
+    play.on(Event.CUSTOM_EVENT, ({eventId, eventData, senderId}) => {
+      eventData.action = eventId
+      eventData.player = play.room.getPlayer(senderId).userId
+      game.performAction(eventData)
+    })
+
+    game.on('error', err => {
+      console.error(err)
+    })
+
+    game.on('stateChanged', () => {
+      roomState.players.map( playerName => {
+        const player = _.find(play.room.playerList, {userId: playerName})
+
+        if (player) {
+          play.sendEvent('stateChanged', {
             player: playerName,
             state: game.getState(playerName)
-          })))
-        })
-      }
-
-      // FIXME: tsd of leancloud.realtime
-      masterClient.on(Event.MESSAGE.toString(), (message, conversation: ConversationBase) => {
-        const payload = JSON.parse(message.text)
-        const player = _.first(_.without(conversation.members, masterClientId))
-        game.performAction(_.extend(payload, {player}))
+          }, {
+            targetActorIds: [player.actorId]
+          })
+        }
       })
-
-      game.on('stateChanged', () => {
-        _.map(conversationsByPlayer, (conversation: ConversationBase, player: Player) => {
-          conversation.send(new TextMessage(JSON.stringify({
-            action: 'stateChanged',
-            player: player,
-            state: game.getState(player)
-          })))
-        })
-      })
-
-      game.on('error', err => {
-        console.error(err)
-      })
-
-      game.dealCards()
     })
+
+    play.connect()
   })
+}
+
+function initPlay(userId: string): Play {
+  const play = new Play()
+
+  play.init({
+    appId: 'AaU1irN3dpcBUb9VINnB0yot-gzGzoHsz',
+    appKey: '6R0akkHpnHe7kOr3Kz6PJTcO',
+    region: Region.NorthChina
+  })
+
+  play.userId = userId
+
+  return play
 }

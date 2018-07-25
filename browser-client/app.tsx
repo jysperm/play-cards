@@ -1,4 +1,4 @@
-import {Realtime, TextMessage, Event} from 'leancloud-realtime'
+import {play} from '@leancloud/play'
 import * as _ from 'lodash'
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
@@ -6,11 +6,6 @@ import * as ReactDOM from 'react-dom'
 import {actionSyncController, statusSyncContorller} from './client-sync'
 import {Card, Player, GameState} from '../common/types'
 import Game from '../common/game'
-
-const realtime = new Realtime({
-  appId: 'AaU1irN3dpcBUb9VINnB0yot-gzGzoHsz',
-  appKey: '6R0akkHpnHe7kOr3Kz6PJTcO',
-})
 
 interface GameComponentState extends GameState {
   playerName?: Player
@@ -54,15 +49,15 @@ class GameComponent extends React.Component<Object, GameComponentState> {
 
     this.setState({playerName})
 
-    realtime.createIMClient(playerName).then( imClient => {
-      return fetch(`/join?playerName=${playerName}`, {method: 'post'}).then( res => {
-        if (!res.ok) {
-          return res.text().then( body => {
-            throw new Error(body)
-          })
-        }
+    return fetch(`/join?playerName=${playerName}`, {method: 'post'}).then( res => {
+      if (!res.ok) {
+        return res.text().then( body => {
+          throw new Error(body)
+        })
+      }
 
-        return actionSyncController(imClient).then( game => {
+      return res.json().then( ({roomName}) => {
+        return statusSyncContorller(roomName, playerName).then( game => {
           this.game = game
 
           game.on('stateChanged', () => {
