@@ -10,10 +10,7 @@ gulp.task('common', () => {
 
 gulp.task('browser-client', ['common'], () => {
   return gulp.src(['browser-client/*.tsx', 'browser-client/*.ts'])
-    .pipe(ts({
-      jsx: 'react',
-      module: 'commonjs'
-    }))
+    .pipe(ts(require('./tsconfig').compilerOptions))
     .pipe(gulp.dest('browser-client'));
 });
 
