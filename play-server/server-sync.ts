@@ -27,12 +27,12 @@ export function actionSyncController(roomState: RoomState): Promise<Play> {
       resolve(play)
     });
 
-    play.on(Event.PLAYER_ROOM_JOINED, player => {
+    play.on(Event.PLAYER_ROOM_JOINED, ({newPlayer}) => {
       play.sendEvent('gameStarted', {
         players: roomState.players,
         seed: roomState.seed
       }, {
-        targetActorIds: [player.actorId]
+        targetActorIds: [newPlayer.actorId]
       })
     })
 
@@ -64,18 +64,18 @@ export function statusSyncContorller(roomState: RoomState): Promise<Play> {
       resolve(play)
     });
 
-    play.on(Event.PLAYER_ROOM_JOINED, player => {
+    play.on(Event.PLAYER_ROOM_JOINED, ({newPlayer}) => {
       play.sendEvent('gameStarted', {
         players: roomState.players
       }, {
-        targetActorIds: [player.actorId]
+        targetActorIds: [newPlayer.actorId]
       })
 
       play.sendEvent('stateChanged', {
-        player: player.userId,
-        state: game.getState(player.userId)
+        player: newPlayer.userId,
+        state: game.getState(newPlayer.userId)
       }, {
-        targetActorIds: [player.actorId]
+        targetActorIds: [newPlayer.actorId]
       })
     })
 
