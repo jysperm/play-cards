@@ -49,23 +49,31 @@ class GameComponent extends React.Component<Object, GameComponentState> {
 
     this.setState({playerName})
 
-    return fetch(`/join?playerName=${playerName}`, {method: 'post'}).then( res => {
-      if (!res.ok) {
-        return res.text().then( body => {
-          throw new Error(body)
-        })
-      }
+    const joinRoom = () => {
+      return fetch(`/join?playerName=${playerName}`, {method: 'post'}).then( res => {
+        if (!res.ok) {
+          if (res.status === 504) {
+            return joinRoom()
+          } else {
+            return res.text().then( body => {
+              throw new Error(body)
+            })
+          }
+        }
 
-      return res.json().then( ({roomName}) => {
-        return statusSyncContorller(roomName, playerName).then( game => {
-          this.game = game
+        return res.json()
+      })
+    }
 
-          game.on('stateChanged', () => {
-            this.setState(game.getState(playerName))
-          })
+    joinRoom().then( ({roomName}) => {
+      return statusSyncContorller(roomName, playerName).then( game => {
+        this.game = game
 
+        game.on('stateChanged', () => {
           this.setState(game.getState(playerName))
         })
+
+        this.setState(game.getState(playerName))
       })
     }).catch( err => {
       console.error(err)

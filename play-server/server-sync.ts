@@ -3,7 +3,7 @@ import * as _ from 'lodash'
 import * as Promise from 'bluebird'
 
 import Game from '../common/game'
-import {RoomState} from '../common/types'
+import {RoomState, GameAction} from '../common/types'
 
 export function actionSyncController(roomState: RoomState): Promise<Play> {
   return new Promise( (resolve, reject) => {
@@ -82,7 +82,7 @@ export function statusSyncContorller(roomState: RoomState): Promise<Play> {
     play.on(Event.CUSTOM_EVENT, ({eventId, eventData, senderId}) => {
       eventData.action = eventId
       eventData.player = play.room.getPlayer(senderId).userId
-      game.performAction(eventData)
+      game.performAction(eventData as GameAction)
     })
 
     game.on('error', err => {

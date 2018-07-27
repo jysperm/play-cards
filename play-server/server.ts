@@ -16,9 +16,7 @@ app.post('/join', (req, res) => {
 
   console.log(`${playerName} is waiting`)
 
-  if (!waiting[playerName]) {
-    waiting[playerName] = res
-  }
+  waiting[playerName] = res
 
   if (_.keys(waiting).length >= 3) {
     const players = _.keys(waiting).splice(0, 3)

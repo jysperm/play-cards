@@ -6,7 +6,7 @@
 目前有两种实现：
 
 - `realtime` 分支：基于 LeanCloud [实时通信服务](https://leancloud.cn/docs/realtime_v2.html) 实现
-- `play` 分支：基于 LeanCloud [游戏解决方案](https://leancloud.cn/docs/play.html) 实现
+- `play` 分支：基于 LeanCloud [游戏解决方案](https://leancloud.cn/docs/play.html) 实现，线上版本在 [play-cards.leanapp.cn](https://play-cards.leanapp.cn)
 
 每种实现都同时支持「动作同步（帧同步）」和「状态同步（C/S 同步）」，服务器端会创建一个 masterClient 参与每局游戏。
 
@@ -153,7 +153,9 @@ interface PassAction {
 
 ## 房间匹配
 
-`play-server/server.ts` 中的 `POST /join` 实现了一个非常 **简易** 的自定义房间匹配，会在内存中记录请求匹配的玩家（并将请求挂起），待凑齐 3 个玩家后再给玩家响应创建好的房间名字，让客户端加入房间，目前没有考虑到等待匹配的玩家掉线的情况。
+`play-server/server.ts` 中的 `POST /join` 实现了一个非常 **简易** 的自定义房间匹配，会在内存中记录请求匹配的玩家（并将请求挂起），待凑齐 3 个玩家后再给玩家响应创建好的房间名字，让客户端加入房间。
+
+云引擎的 HTTP 连接有 60 秒的超时，所以客户端会在收到 504 的超时错误后用同一个 playerName 重试 `POST /join`。
 
 ## 断线重连
 
