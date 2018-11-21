@@ -18,10 +18,10 @@
 common              -- 公共模块（客户端、服务器共用）
 ├── game.ts           -- 游戏业务逻辑
 └── types.ts
-browser-clint       -- 客户端项目
+browser-client      -- 客户端项目
 ├── app.tsx           -- 客户端入口、界面
 └── client-sync.ts    -- 客户端同步逻辑
-play-server         -- 服务器项目
+master-client       -- 服务器项目
 ├── server-sync.ts    -- 服务器同步逻辑
 └── server.ts         -- 服务器入口、房间匹配
 ```
@@ -122,7 +122,7 @@ interface PassAction {
 
 ## 数据同步
 
-其实这个项目的重点就是游戏的数据同步，`browser-clint/client-sync.ts` 和 `play-server/server-sync.ts` 中分别是客户端和服务器的数据同步逻辑，其中的函数名是一一对应的：
+其实这个项目的重点就是游戏的数据同步，`client-sync.ts` 和 `server-sync.ts` 中分别是客户端和服务器的数据同步逻辑，其中的函数名是一一对应的：
 
 - actionSyncController 实现的是「动作同步（帧同步）」，这种模式下客户端发送动作（Action），服务器只转发动作，游戏逻辑主要在客户端运行，客户端掌握所有的数据（包括其他玩家的手牌）。
 - statusSyncContorller 实现的是「状态同步（C/S 同步）」，这种模式下客户端发送动作（Action），服务器运行游戏逻辑后，转发计算后的游戏状态（State），游戏逻辑主要在服务器运行，客户端只做展现，只掌握自己的手牌。
@@ -153,7 +153,7 @@ interface PassAction {
 
 ## 房间匹配
 
-`play-server/server.ts` 中的 `POST /join` 实现了一个非常 **简易** 的自定义房间匹配，会在内存中记录请求匹配的玩家（并将请求挂起），待凑齐 3 个玩家后再给玩家响应创建好的房间名字，让客户端加入房间。
+`master-client/server.ts` 中的 `POST /join` 实现了一个非常 **简易** 的自定义房间匹配，会在内存中记录请求匹配的玩家（并将请求挂起），待凑齐 3 个玩家后再给玩家响应创建好的房间名字，让客户端加入房间。
 
 云引擎的 HTTP 连接有 60 秒的超时，所以客户端会在收到 504 的超时错误后用同一个 playerName 重试 `POST /join`。
 
